@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from util import get_data, plot_data
 from marketismcode import compute_portvals
+import matplotlib.pyplot as plt
 
 def author():
     """
@@ -24,7 +25,7 @@ def testPolicy(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,
 
     df=df[['JPM']]
 
-    df['prev_day'] = df['JPM'].shift(1)
+    df['prev_day'] = df['JPM'].shift(-1)
     df['is_bigger'] = df['JPM'] > df['prev_day']
     print(df)
 
@@ -66,14 +67,22 @@ def testPolicy(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,
     tos_vals = compute_portvals(orders_df, sv, 0.0, 0.0)
     normed_tos_vals = tos_vals/tos_vals[0]
 
-    plot_data(normed_tos_vals)
-
 
     #generate benchmark orders
     benchmark_order = benchmark_orders()
     bench_vals = compute_portvals(benchmark_order, sv, 0.0 ,0.0)
     normed_benchmark_vals=bench_vals/bench_vals[0]
-    plot_data(normed_benchmark_vals)
+
+    plt.figure(figsize=(16,8))
+    plt.title("Figure 1")
+    plt.xlabel("Date")
+    plt.ylabel("Profit")
+
+    plt.plot(normed_tos_vals.index, normed_tos_vals, label="TOS")
+    plt.plot(normed_benchmark_vals.index, normed_benchmark_vals, label="Benchmark")
+    plt.legend()
+    plt.savefig("figure1.png")
+    plt.clf()
 
 
 def benchmark_orders(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,31), sv = 100000):
