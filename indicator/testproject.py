@@ -1,9 +1,16 @@
-import datetime as dt
+import indicators as ind
 
-import numpy as np
+def author():
+    """
+    :return: The GT username of the student
+    :rtype: str
+    """
+    return "cqu41"  # replace tb34 with your Georgia Tech username.
+def test():
 
-import pandas as pd
-from util import get_data, plot_data
-import TheoreticallyOptimalStrategy as tos
+    ind.print_plot()
 
-df_trades = tos.testPolicy(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,31), sv=100000)
+
+if __name__ == "__main__":
+    test()
+
