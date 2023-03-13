@@ -22,9 +22,10 @@ def testPolicy(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,
 
     df=df[['JPM']]
 
-    df['prev_day'] = df['JPM'].shift(-1)
-    df['is_bigger'] = df['JPM'] > df['prev_day']
-    print(df)
+    #make a column for the previous price
+    df['next_day'] = df['JPM'].shift(-1)
+    df['is_bigger'] = df['JPM'] > df['next_day']
+    # print(df)
 
     #build orders df
     orders_df  = pd.DataFrame(columns=['Symbol', 'Order', 'Shares'], index=df.index)
@@ -51,13 +52,13 @@ def testPolicy(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,
                 net_holding+=2000
 
 
-    print(orders_df)
-
-    print(type(orders_df))
+    # print(orders_df)
+    #
+    # print(type(orders_df))
     orders_df['Symbol'] = 'JPM'
     orders_df['Order']=orders_df['Order'].fillna('BUY')
     orders_df['Shares']=orders_df['Shares'].fillna(0)
-    print(orders_df)
+    # print(orders_df)
 
     tos_vals = compute_portvals(orders_df, sv, 0.0, 0.0)
     normed_tos_vals = tos_vals/tos_vals[0]
@@ -78,6 +79,27 @@ def testPolicy(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,
     plt.legend()
     plt.savefig("figure1.png")
     plt.clf()
+
+    '''
+    print statistics
+    '''
+    daily_ret_tos= tos_vals/tos_vals.shift(1)-1
+    daily_ret_tos=daily_ret_tos[1:]
+    cum_ret_tos = (tos_vals[-1] / tos_vals[0] - 1)
+    mean_daily_ret_tos = daily_ret_tos.mean().round(6)
+    std_daily_ret_tos = daily_ret_tos.std().round(6)
+    print("TOS cumulative return: ", cum_ret_tos.round(6))
+    print("TOS mean of daily return: ", mean_daily_ret_tos)
+    print('TOS standard deviation of daily returns: ', std_daily_ret_tos)
+
+    daily_ret_bench = bench_vals / bench_vals.shift(1) - 1
+    daily_ret_bench = daily_ret_bench[1:]
+    cum_ret_bench = (bench_vals[-1] / bench_vals[0] - 1)
+    mean_daily_ret_bench = daily_ret_bench.mean().round(6)
+    std_daily_ret_bench = daily_ret_bench.std().round(6)
+    print("Bench cumulative return: ", cum_ret_bench.round(6))
+    print("Bench mean of daily return: ", mean_daily_ret_bench)
+    print('Bench standard deviation of daily returns: ', std_daily_ret_bench)
 
 
 def benchmark_orders(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009,12,31), sv = 100000):
