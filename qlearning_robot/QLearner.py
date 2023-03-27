@@ -113,7 +113,7 @@ class QLearner(object):
             if self.verbose:
                 print(f"s a = {action}")
         else:
-            q_value=self.Q_table[s_prime] # contains the q value for all possible actions for s_prime
+            q_value=self.Q_table[s_prime, :] # contains the q value for all possible actions for s_prime
             best_action_index=np.argmax(q_value)
             action = best_action_index
             if self.verbose:
@@ -121,14 +121,14 @@ class QLearner(object):
 
         #The Q-table stores the expected reward for each action in each state
         #use <s, a, s_prime, r> to update Q_table
-        self.Q_table[self.s, self.a]=(1-self.alpha) * self.Q_table[self.s, self.a] + self.alpha*(r+self.gamma*self.Q_table[s_prime, np.argmax(self.Q_table[s_prime,])])
+        self.Q_table[self.s, self.a]=(1-self.alpha) * self.Q_table[self.s, self.a] + self.alpha*(r+self.gamma*self.Q_table[s_prime, np.argmax(self.Q_table[s_prime,:])])
 
         if self.verbose:
             print(f"s = {s_prime}, a = {action}, r={r}")
 
         self.s = s_prime
         self.a = int(action)
-        self.rar *= self.radr
+        self.rar *= self.radr #decay random action
 
         return action
 
