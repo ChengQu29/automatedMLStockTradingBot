@@ -73,8 +73,7 @@ class QLearner(object):
         self.num_actions = num_actions
         self.s = 0
         self.a = 0
-        self.Q_table = np.zeros((num_states, num_actions))
-        self.experienceTuple=[]
+        self.Q_table = np.zeros((num_states, num_actions))*0.000001 #initialize Q table
         self.rar=rar
         self.radr=radr
         self.alpha=alpha
@@ -114,16 +113,15 @@ class QLearner(object):
             if self.verbose:
                 print(f"s a = {action}")
         else:
-            q_value=self.Q_table[s_prime]
+            q_value=self.Q_table[s_prime] # contains the q value for all possible actions for s_prime
             best_action_index=np.argmax(q_value)
             action = best_action_index
             if self.verbose:
                 print(f"s a = {action}")
 
         #The Q-table stores the expected reward for each action in each state
+        #use <s, a, s_prime, r> to update Q_table
         self.Q_table[self.s, self.a]=(1-self.alpha) * self.Q_table[self.s, self.a] + self.alpha*(r+self.gamma*self.Q_table[s_prime, np.argmax(self.Q_table[s_prime,])])
-        new_experience = (self.s, self.a, s_prime, r)
-        self.experienceTuple += [new_experience]
 
         if self.verbose:
             print(f"s = {s_prime}, a = {action}, r={r}")
