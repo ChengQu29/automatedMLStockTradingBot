@@ -2,7 +2,7 @@ import datetime as dt
 
 import pandas as pd
 from util import get_data
-from  indicators import BB, MACD
+from  indicators import BB, MACD, momentum
 import matplotlib.pyplot as plt
 
 class ManualStrategy():
@@ -26,7 +26,7 @@ class ManualStrategy():
         holdings = {symbol: 0}
         lookback = 14
 
-        price_df = price_df[["JPM"]]
+        price_df = price_df[[symbol]]
 
         #build orders df
         orders= pd.DataFrame()
@@ -46,41 +46,37 @@ class ManualStrategy():
         #only use bb(percentage)
         upper_band, lower_band, bb = BB(lookback, normed_price_df)
 
-        #MACD
-        macd_line, signal_line = MACD(normed_price_df)
-        print(macd_line)
-        print(signal_line)
+        #get vix
+        vix = get_data(['$VIX'], date_range, addSPY=True, colname='Adj Close')
+        vix.fillna(method='ffill', inplace=True)
+        vix.fillna(method='bfill', inplace=True)
+        vix.drop(['SPY'], axis=1, inplace=True)
+        # print(vix)
+        # print("we're good here")
 
-        ema_50 = normed_price_df.ewm(span=50, min_periods=0, adjust=False).mean()
-        ema_200 = normed_price_df.ewm(span=200, min_periods=0, adjust=False).mean()
+        for day in range(lookback, price_df.shape[0]):
 
-
-        for day in range(lookback+1, price_df.shape[0]):
-
-            if (sma_ratio.ix[day, symbol] < 0.95) and (bb.ix[day, symbol] < 0) :
+            if (sma_ratio.ix[day, symbol] < 0.95) and (bb.ix[day, symbol] < 0) and vix.ix[day, '$VIX'] < 50 :
                 if holdings[symbol] < 1000:
-                    holdings[symbol]=holdings[symbol]+1000
-                    new_row={'Date':price_df.index[day], 'Symbol': symbol, 'Order': 'BUY', 'Shares': 1000}
-                    orders=orders.append(new_row, ignore_index=True)
+                    holdings[symbol] = holdings[symbol] + 1000
+                    new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'BUY', 'Shares': 1000}
+                    orders = orders.append(new_row, ignore_index=True)
 
-
-            elif (sma_ratio.ix[day, symbol]  > 1.05) and (bb.ix[day, symbol] > 1) :
+            elif (sma_ratio.ix[day, symbol] > 1.05) and (bb.ix[day, symbol] > 1.0) and vix.ix[day, '$VIX'] > 20:
                 if holdings[symbol] > -1000:
                     holdings[symbol] = holdings[symbol] - 1000
                     new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'SELL', 'Shares': 1000}
-                    orders=orders.append(new_row, ignore_index=True)
+                    orders = orders.append(new_row, ignore_index=True)
 
-
-            elif (sma_ratio.ix[day, symbol] >= 1) and (sma_ratio.ix[day-1, symbol] < 1) and (holdings[symbol] > 0) :
+            elif (sma_ratio.ix[day, symbol] >= 1) and (sma_ratio.ix[day-1, symbol] < 1) and (holdings[symbol] > 0) and vix.ix[day, '$VIX'] > 20:
                 holdings[symbol] = 0
                 new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'SELL', 'Shares': 1000}
-                orders=orders.append(new_row, ignore_index=True)
+                orders = orders.append(new_row, ignore_index=True)
 
-
-            elif (sma_ratio.ix[day,symbol] <= 1) and (sma_ratio.ix[day-1, symbol] > 1) and (holdings[symbol] < 0) :
+            elif (sma_ratio.ix[day, symbol] <= 1) and (sma_ratio.ix[day-1, symbol] > 1) and (holdings[symbol] < 0) and vix.ix[day, '$VIX'] < 50:
                 holdings[symbol] = 0
                 new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'BUY', 'Shares': 1000}
-                orders=orders.append(new_row, ignore_index=True)
+                orders = orders.append(new_row, ignore_index=True)
 
         orders=orders.set_index(orders.columns[0])
         return orders
@@ -95,7 +91,7 @@ class ManualStrategy():
         orders['Order'] = 0
         orders['Shares'] = 0
 
-        orders['Symbol'] = 'JPM'
+        orders['Symbol'] = symbol
         orders['Order'] = 'BUY'
         orders.iloc[0, 2] = 1000
 
