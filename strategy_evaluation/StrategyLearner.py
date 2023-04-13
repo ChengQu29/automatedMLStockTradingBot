@@ -31,7 +31,11 @@ import datetime as dt
 import random  		  	   		  		 			  		 			     			  	 
   		  	   		  		 			  		 			     			  	 
 import pandas as pd  		  	   		  		 			  		 			     			  	 
-import util as ut  		  	   		  		 			  		 			     			  	 
+import util as ut
+from util import get_data
+from  indicators import BB
+import RTLearner as rtl
+import numpy as np
   		  	   		  		 			  		 			     			  	 
   		  	   		  		 			  		 			     			  	 
 class StrategyLearner(object):  		  	   		  		 			  		 			     			  	 
@@ -54,6 +58,7 @@ class StrategyLearner(object):
         self.verbose = verbose  		  	   		  		 			  		 			     			  	 
         self.impact = impact  		  	   		  		 			  		 			     			  	 
         self.commission = commission
+        self.learner=rtl.RTLearner(leaf_size=5)
 
     def author(self):
         """
@@ -61,13 +66,71 @@ class StrategyLearner(object):
         :rtype: str
         """
         return "cqu41"  # replace tb34 with your Georgia Tech username.
-  		  	   		  		 			  		 			     			  	 
+
+    def prepare_data(self, symbol, sd, ed, sv):
+
+        # get stock data
+        symbols = [symbol]
+        date_range = pd.date_range(sd, ed)
+        price_df = get_data(symbols, date_range)
+
+        lookback = 14
+
+        price_df = price_df[[symbol]]
+
+        normed_price_df = price_df / price_df.iloc[0]
+        # print(price_df)
+
+        sma = normed_price_df.copy().rolling(window=lookback).mean()
+
+        # sma ratio from lecture
+        sma_ratio = normed_price_df / sma  # 505 row 1 column
+        sma_ratio.fillna(method='ffill', inplace=True)
+        sma_ratio.fillna(method='bfill', inplace=True)
+        sma_ratio.columns=['p/sma']
+
+
+        # only use bb(percentage)
+        upper_band, lower_band, bb = BB(lookback, normed_price_df)
+        bb.fillna(method='ffill', inplace=True)
+        bb.fillna(method='bfill', inplace=True)
+        bb.columns=['bb']
+
+        # get vix
+        vix = get_data(['$VIX'], date_range, addSPY=True, colname='Adj Close')
+        vix.fillna(method='ffill', inplace=True)
+        vix.fillna(method='bfill', inplace=True)
+        vix.drop(['SPY'], axis=1, inplace=True)
+
+        combined_feature_df = pd.concat([sma_ratio, bb, vix], axis=1)
+
+
+
+        # build a date_index of the same shape as ...
+        date_index = combined_feature_df.index
+
+        # print(combined_feature_df)
+        x_data = combined_feature_df.values[:, 0:]  # x_train is now an np array
+
+
+        y_data = (price_df.shift(-lookback) / price_df) - 1  # Ytrain is percentage change
+        y_data[y_data > 0] = price_df.shift(-lookback) / (price_df * (1.0 + 2 * self.impact)) - 1.0
+        y_data[y_data < 0] = price_df.shift(-lookback) / (price_df * (1.0 - 2 * self.impact)) - 1.0
+
+        # print(y_before_split)
+
+        y_data = y_data.values
+
+
+        return x_data, y_data, date_index, normed_price_df
+
+
     # this method should create a QLearner, and train it for trading  		  	   		  		 			  		 			     			  	 
     def add_evidence(  		  	   		  		 			  		 			     			  	 
         self,  		  	   		  		 			  		 			     			  	 
         symbol="IBM",  		  	   		  		 			  		 			     			  	 
         sd=dt.datetime(2008, 1, 1),  		  	   		  		 			  		 			     			  	 
-        ed=dt.datetime(2009, 1, 1),  		  	   		  		 			  		 			     			  	 
+        ed=dt.datetime(2009, 12, 31),
         sv=10000,  		  	   		  		 			  		 			     			  	 
     ):  		  	   		  		 			  		 			     			  	 
         """  		  	   		  		 			  		 			     			  	 
@@ -83,32 +146,35 @@ class StrategyLearner(object):
         :type sv: int  		  	   		  		 			  		 			     			  	 
         """  		  	   		  		 			  		 			     			  	 
   		  	   		  		 			  		 			     			  	 
-        # add your code to do learning here  		  	   		  		 			  		 			     			  	 
-  		  	   		  		 			  		 			     			  	 
-        # example usage of the old backward compatible util function  		  	   		  		 			  		 			     			  	 
-        syms = [symbol]  		  	   		  		 			  		 			     			  	 
-        dates = pd.date_range(sd, ed)  		  	   		  		 			  		 			     			  	 
-        prices_all = ut.get_data(syms, dates)  # automatically adds SPY  		  	   		  		 			  		 			     			  	 
-        prices = prices_all[syms]  # only portfolio symbols  		  	   		  		 			  		 			     			  	 
-        prices_SPY = prices_all["SPY"]  # only SPY, for comparison later  		  	   		  		 			  		 			     			  	 
-        if self.verbose:  		  	   		  		 			  		 			     			  	 
-            print(prices)  		  	   		  		 			  		 			     			  	 
-  		  	   		  		 			  		 			     			  	 
-        # example use with new colname  		  	   		  		 			  		 			     			  	 
-        volume_all = ut.get_data(  		  	   		  		 			  		 			     			  	 
-            syms, dates, colname="Volume"  		  	   		  		 			  		 			     			  	 
-        )  # automatically adds SPY  		  	   		  		 			  		 			     			  	 
-        volume = volume_all[syms]  # only portfolio symbols  		  	   		  		 			  		 			     			  	 
-        volume_SPY = volume_all["SPY"]  # only SPY, for comparison later  		  	   		  		 			  		 			     			  	 
-        if self.verbose:  		  	   		  		 			  		 			     			  	 
-            print(volume)  		  	   		  		 			  		 			     			  	 
+        x_train, y_train, date_index, not_used_price_df = self.prepare_data(symbol, sd, ed, sv)
+
+        y_train=y_train.flatten() #(303,)
+        # print(y_train.shape)
+        # print(y_train)
+
+        #classification
+        buy_threshold=0.08
+        sell_threshold=-0.08
+
+        y_train[y_train>buy_threshold]=1
+        y_train[y_train<sell_threshold]=-1
+        y_train[(y_train >= sell_threshold) & (y_train <= buy_threshold)] = 0
+        # print(y_train)
+        # print(y_train.shape)
+
+        #call learner
+
+        d_tree=self.learner.add_evidence(x_train,y_train)
+        target_y=self.learner.query(x_train)
+        # print(target_y)
+
   		  	   		  		 			  		 			     			  	 
     # this method should use the existing policy and test it against new data  		  	   		  		 			  		 			     			  	 
     def testPolicy(  		  	   		  		 			  		 			     			  	 
         self,  		  	   		  		 			  		 			     			  	 
         symbol="IBM",  		  	   		  		 			  		 			     			  	 
-        sd=dt.datetime(2009, 1, 1),  		  	   		  		 			  		 			     			  	 
-        ed=dt.datetime(2010, 1, 1),  		  	   		  		 			  		 			     			  	 
+        sd=dt.datetime(2010, 1, 1),
+        ed=dt.datetime(2011, 12, 31),
         sv=10000,  		  	   		  		 			  		 			     			  	 
     ):  		  	   		  		 			  		 			     			  	 
         """  		  	   		  		 			  		 			     			  	 
@@ -128,28 +194,24 @@ class StrategyLearner(object):
             long so long as net holdings are constrained to -1000, 0, and 1000.  		  	   		  		 			  		 			     			  	 
         :rtype: pandas.DataFrame  		  	   		  		 			  		 			     			  	 
         """  		  	   		  		 			  		 			     			  	 
-  		  	   		  		 			  		 			     			  	 
-        # here we build a fake set of trades  		  	   		  		 			  		 			     			  	 
-        # your code should return the same sort of data  		  	   		  		 			  		 			     			  	 
-        dates = pd.date_range(sd, ed)  		  	   		  		 			  		 			     			  	 
-        prices_all = ut.get_data([symbol], dates)  # automatically adds SPY  		  	   		  		 			  		 			     			  	 
-        trades = prices_all[[symbol,]]  # only portfolio symbols  		  	   		  		 			  		 			     			  	 
-        trades_SPY = prices_all["SPY"]  # only SPY, for comparison later  		  	   		  		 			  		 			     			  	 
-        trades.values[:, :] = 0  # set them all to nothing  		  	   		  		 			  		 			     			  	 
-        trades.values[0, :] = 1000  # add a BUY at the start  		  	   		  		 			  		 			     			  	 
-        trades.values[40, :] = -1000  # add a SELL  		  	   		  		 			  		 			     			  	 
-        trades.values[41, :] = 1000  # add a BUY  		  	   		  		 			  		 			     			  	 
-        trades.values[60, :] = -2000  # go short from long  		  	   		  		 			  		 			     			  	 
-        trades.values[61, :] = 2000  # go long from short  		  	   		  		 			  		 			     			  	 
-        trades.values[-1, :] = -1000  # exit on the last day  		  	   		  		 			  		 			     			  	 
-        if self.verbose:  		  	   		  		 			  		 			     			  	 
-            print(type(trades))  # it better be a DataFrame!  		  	   		  		 			  		 			     			  	 
-        if self.verbose:  		  	   		  		 			  		 			     			  	 
-            print(trades)  		  	   		  		 			  		 			     			  	 
-        if self.verbose:  		  	   		  		 			  		 			     			  	 
-            print(prices_all)  		  	   		  		 			  		 			     			  	 
-        return trades  		  	   		  		 			  		 			     			  	 
+
+        # get data
+
+        x_test, not_used, date_index, normed_price_df = self.prepare_data(symbol, sd, ed, sv)
+
+        y_test = self.learner.query(x_test)
+        y_df = pd.DataFrame({'y_test': y_test}, index=date_index)
+
+        print(y_df)
+
+        # next, generate orders
+
+
+
   		  	   		  		 			  		 			     			  	 
   		  	   		  		 			  		 			     			  	 
-if __name__ == "__main__":  		  	   		  		 			  		 			     			  	 
+if __name__ == "__main__":
+    test_learner = StrategyLearner()
+    test_learner.add_evidence(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009, 12, 31), sv=10000)
+    trades = test_learner.testPolicy(symbol="JPM", sd=dt.datetime(2010, 1, 1), ed=dt.datetime(2011, 12, 31), sv=10000)
     print("One does not simply think up a strategy")  		  	   		  		 			  		 			     			  	 

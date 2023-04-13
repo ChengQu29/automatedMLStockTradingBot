@@ -2,7 +2,7 @@ import datetime as dt
 
 import pandas as pd
 from util import get_data
-from  indicators import BB, MACD, momentum
+from indicators import BB
 import matplotlib.pyplot as plt
 
 class ManualStrategy():
