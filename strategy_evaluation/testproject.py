@@ -23,6 +23,7 @@ if __name__=="__main__":
 
     #generage manual strategy
     manual_orders = mst.testPolicy(symbol_to_test, sd, ed, sv)
+    # print(manual_orders)
 
     manual_vals=compute_portvals(manual_orders, sv, 0.0, 0.0)
     normed_manual_vals = manual_vals/manual_vals[0]

@@ -35,6 +35,7 @@ import util as ut
 from util import get_data
 from  indicators import BB
 import RTLearner as rtl
+import BagLearner as bgl
 import numpy as np
   		  	   		  		 			  		 			     			  	 
   		  	   		  		 			  		 			     			  	 
@@ -58,7 +59,7 @@ class StrategyLearner(object):
         self.verbose = verbose  		  	   		  		 			  		 			     			  	 
         self.impact = impact  		  	   		  		 			  		 			     			  	 
         self.commission = commission
-        self.learner=rtl.RTLearner(leaf_size=5)
+        self.learner = bgl.BagLearner(learner = rtl.RTLearner, kwargs={'leaf_size': 5}, bags = 20, boost = False, verbose = False)
 
     def author(self):
         """
@@ -153,8 +154,8 @@ class StrategyLearner(object):
         # print(y_train)
 
         #classification
-        buy_threshold=0.08
-        sell_threshold=-0.08
+        buy_threshold=0.008
+        sell_threshold=-0.008
 
         y_train[y_train>buy_threshold]=1
         y_train[y_train<sell_threshold]=-1
@@ -196,20 +197,42 @@ class StrategyLearner(object):
         """  		  	   		  		 			  		 			     			  	 
 
         # get data
-
         x_test, not_used, date_index, normed_price_df = self.prepare_data(symbol, sd, ed, sv)
 
         y_test = self.learner.query(x_test)
-        y_df = pd.DataFrame({'y_test': y_test}, index=date_index)
-
-        print(y_df)
+        y_test = np.nan_to_num(y_test)
 
         # next, generate orders
+        trades = normed_price_df.copy()
+        trades.iloc[:, :] = 0
+        position = 0
 
+        for i in range(len(trades)):
 
+            position += trades.iloc[i - 1, trades.columns.get_loc(symbol)]
 
-  		  	   		  		 			  		 			     			  	 
-  		  	   		  		 			  		 			     			  	 
+            if y_test[i] <0 :
+                if position == 0:
+                    trades.iloc[i, :] = -1000
+                elif position == 1000:
+                    trades.iloc[i, :] = -2000
+                else:
+                    trades.iloc[i, :] = 0
+            elif y_test[i] >0:
+                if position == 0:
+                    trades.iloc[i, :] = 1000
+                elif position == 1000:
+                    trades.iloc[i, :] = 0
+                else:
+                    trades.iloc[i, :] = 2000
+            else:
+                trades.iloc[i, :] = 0
+        # print(trades)
+        return trades
+
+    def convert_to_marketsim_orders(self):
+        pass
+
 if __name__ == "__main__":
     test_learner = StrategyLearner()
     test_learner.add_evidence(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009, 12, 31), sv=10000)
