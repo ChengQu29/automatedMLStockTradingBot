@@ -231,15 +231,15 @@ class StrategyLearner(object):
         # print(type(trades))
         return trades
 
-    def generate_marketsim_orders(self, symbol):
+    def generate_marketsim_orders(self, symbol, trades):
         orders=pd.DataFrame(index=trades.index, columns=['Symbol', 'Order', 'Shares'])
 
         for index, row in trades.iterrows():
             shares=row['JPM']
             if shares>0:
-                orders.loc[index]=[symbol, 'BUY', shares]
+                orders.loc[index]=[symbol, 'BUY', abs(shares)]
             if shares<0:
-                orders.loc[index] = [symbol, 'SELL', shares]
+                orders.loc[index] = [symbol, 'SELL', abs(shares)]
 
         orders=orders.dropna(subset=['Order'])
         # print(orders)
@@ -249,4 +249,5 @@ if __name__ == "__main__":
     test_learner = StrategyLearner()
     test_learner.add_evidence(symbol="JPM", sd=dt.datetime(2008, 1, 1), ed=dt.datetime(2009, 12, 31), sv=10000)
     trades = test_learner.testPolicy(symbol="JPM", sd=dt.datetime(2010, 1, 1), ed=dt.datetime(2011, 12, 31), sv=10000)
+    test_learner.generate_marketsim_orders('JPM', trades)
     print("One does not simply think up a strategy")
