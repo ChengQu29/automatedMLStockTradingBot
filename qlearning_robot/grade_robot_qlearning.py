@@ -338,7 +338,7 @@ def test_qlearning(
         tb_list = [  		  	   		  		 			  		 			     			  	 
             row  		  	   		  		 			  		 			     			  	 
             for row in tb_list  		  	   		  		 			  		 			     			  	 
-            if row[0] in ["QLearner.py", "StrategyLearner.py"]  		  	   		  		 			  		 			     			  	 
+            if row[0] in ["QLearner.py", "StrategyLearner.py"]
         ]  		  	   		  		 			  		 			     			  	 
         if tb_list:  		  	   		  		 			  		 			     			  	 
             msg += "Traceback:\n"  		  	   		  		 			  		 			     			  	 

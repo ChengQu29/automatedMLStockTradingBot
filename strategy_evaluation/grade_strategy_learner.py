@@ -458,7 +458,7 @@ def test_strategy(
                 row[2],  		  	   		  		 			  		 			     			  	 
                 row[3],  		  	   		  		 			  		 			     			  	 
             )  # show only filename instead of long absolute path  		  	   		  		 			  		 			     			  	 
-        # tb_list = [row for row in tb_list if row[0] in ['QLearner.py','StrategyLearner.py']]  		  	   		  		 			  		 			     			  	 
+        # tb_list = [row for row in tb_list if row[0] in ['QLearner.py','StrategyLearner.py']]
         if tb_list:  		  	   		  		 			  		 			     			  	 
             msg += "Traceback:\n"  		  	   		  		 			  		 			     			  	 
             msg += "".join(tb.format_list(tb_list))  # contains newlines  		  	   		  		 			  		 			     			  	 

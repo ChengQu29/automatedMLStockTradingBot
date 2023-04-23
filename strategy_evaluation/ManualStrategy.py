@@ -4,6 +4,7 @@ import pandas as pd
 from util import get_data
 from indicators import BB
 import matplotlib.pyplot as plt
+from marketsimcode import compute_portvals
 
 class ManualStrategy():
     def __init__(self):
@@ -59,13 +60,13 @@ class ManualStrategy():
             if (sma_ratio.ix[day, symbol] < 0.95) and (bb.ix[day, symbol] < 0) and vix.ix[day, '$VIX'] < 50 :
                 if holdings[symbol] < 1000:
                     holdings[symbol] = holdings[symbol] + 1000
-                    new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'BUY', 'Shares': 1000}
+                    new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'BUY', 'Shares': 1000, 'Long entry': 1}
                     orders = orders.append(new_row, ignore_index=True)
 
             elif (sma_ratio.ix[day, symbol] > 1.05) and (bb.ix[day, symbol] > 1.0) and vix.ix[day, '$VIX'] > 20:
                 if holdings[symbol] > -1000:
                     holdings[symbol] = holdings[symbol] - 1000
-                    new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'SELL', 'Shares': 1000}
+                    new_row = {'Date': price_df.index[day], 'Symbol': symbol, 'Order': 'SELL', 'Shares': 1000, 'Short entry': 1}
                     orders = orders.append(new_row, ignore_index=True)
 
             elif (sma_ratio.ix[day, symbol] >= 1) and (sma_ratio.ix[day-1, symbol] < 1) and (holdings[symbol] > 0) and vix.ix[day, '$VIX'] > 20:
@@ -97,6 +98,4 @@ class ManualStrategy():
 
         # return orders dataframe
         return orders
-
-
 

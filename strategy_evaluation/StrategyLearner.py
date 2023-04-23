@@ -114,14 +114,15 @@ class StrategyLearner(object):
         x_data = combined_feature_df.values[:, 0:]  # x_train is now an np array
 
 
-        y_data = (price_df.shift(-lookback) / price_df) - 1  # Ytrain is percentage change
-        y_data[y_data > 0] = price_df.shift(-lookback) / (price_df * (1.0 + 2 * self.impact)) - 1.0
-        y_data[y_data < 0] = price_df.shift(-lookback) / (price_df * (1.0 - 2 * self.impact)) - 1.0
-
-        # print(y_before_split)
+        future_price = price_df.shift(-lookback)
+        current_price = price_df
+        y_data = (future_price / current_price) - 1
+        positive_mask = y_data > 0
+        negative_mask = y_data < 0
+        y_data[positive_mask] = price_df.shift(-lookback) / (price_df * (1.0 + self.impact)) - 1.0
+        y_data[negative_mask] = price_df.shift(-lookback) / (price_df * (1.0 - self.impact)) - 1.0
 
         y_data = y_data.values
-
 
         return x_data, y_data, date_index, normed_price_df
 
